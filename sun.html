@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird Clone</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        #gameCanvas {
+            border: 2px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game variables
+        let bird = {
+            x: 50,
+            y: 300,
+            velocity: 0,
+            gravity: 0.3,
+            jump: -6
+        };
+
+        let pipes = [];
+        let score = 0;
+        let gameOver = false;
+
+        // Game loop
+        function gameLoop() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update bird position
+            bird.velocity += bird.gravity;
+            bird.y += bird.velocity;
+
+            // Draw bird
+            ctx.fillStyle = 'yellow';
+            ctx.beginPath();
+            ctx.arc(bird.x, bird.y, 20, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Generate and draw pipes
+            if (frames % 150 === 0) {
+                let pipeHeight = Math.random() * (canvas.height - 200) + 100;
+                pipes.push({
+                    x: canvas.width,
+                    topHeight: pipeHeight - 100,
+                    bottomY: pipeHeight + 100
+                });
+            }
+
+            pipes.forEach((pipe, index) => {
+                pipe.x -= 1.5;
+
+                ctx.fillStyle = 'green';
+                ctx.fillRect(pipe.x, 0, 50, pipe.topHeight);
+                ctx.fillRect(pipe.x, pipe.bottomY, 50, canvas.height - pipe.bottomY);
+
+                // Check collision
+                if (
+                    bird.x + 20 > pipe.x && bird.x - 20 < pipe.x + 50 &&
+                    (bird.y - 20 < pipe.topHeight || bird.y + 20 > pipe.bottomY)
+                ) {
+                    gameOver = true;
+                }
+
+                // Increase score
+                if (pipe.x + 50 < bird.x && !pipe.passed) {
+                    score++;
+                    pipe.passed = true;
+                }
+
+                // Remove off-screen pipes
+                if (pipe.x < -50) {
+                    pipes.splice(index, 1);
+                }
+            });
+
+            // Draw score
+            ctx.fillStyle = 'black';
+            ctx.font = '24px Arial';
+            ctx.fillText(`Score: ${score}`, 10, 30);
+
+            // Check game over
+            if (bird.y > canvas.height || bird.y < 0) {
+                gameOver = true;
+            }
+
+            if (gameOver) {
+                ctx.fillStyle = 'black';
+                ctx.font = '48px Arial';
+                ctx.fillText('Game Over', canvas.width / 2 - 100, canvas.height / 2);
+                ctx.font = '24px Arial';
+                ctx.fillText('Press Space to Restart', canvas.width / 2 - 100, canvas.height / 2 + 50);
+                return;
+            }
+
+            frames++;
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                if (gameOver) {
+                    resetGame();
+                } else {
+                    bird.velocity = bird.jump;
+                }
+                e.preventDefault(); // Prevent spacebar from scrolling the page
+            }
+        });
+
+        canvas.addEventListener('click', () => {
+            if (gameOver) {
+                resetGame();
+            } else {
+                bird.velocity = bird.jump;
+            }
+        });
+
+        // Reset game
+        function resetGame() {
+            bird.y = 300;
+            bird.velocity = 0;
+            pipes = [];
+            score = 0;
+            gameOver = false;
+            frames = 0;
+            gameLoop();
+        }
+
+        let frames = 0;
+        gameLoop();
+    </script>
+</body>
+</html>
